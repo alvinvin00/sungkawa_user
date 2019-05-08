@@ -26,7 +26,7 @@ class CRUD {
     });
   }
 
-   checkPostEmpty() {
+  checkPostEmpty() {
     bool isEmpty;
     postRef.once().then((snapshot) {
       if (snapshot.value == null)

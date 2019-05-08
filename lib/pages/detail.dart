@@ -54,42 +54,40 @@ class _DetailState extends State<Detail> {
                   SizedBox(
                     height: 30,
                   ),
-                  Table(
-                      defaultColumnWidth: IntrinsicColumnWidth(),
+                  Table(defaultColumnWidth: IntrinsicColumnWidth(), children: [
+                    TableRow(
                       children: [
-                        TableRow(
-                          children: [
-                            Text(
-                              "Nama   : ",
-                              style: TextStyle(fontSize: 16.0),
-                            ),
-                            Text(
-                              widget.post.nama,
-                              style: TextStyle(fontSize: 16),
-                            )
-                          ],
+                        Text(
+                          "Nama   : ",
+                          style: TextStyle(fontSize: 16.0),
                         ),
-                        TableRow(children: [
-                          Text(
-                            "Alamat : ",
-                            style: TextStyle(fontSize: 16.0),
-                          ),
-                          Text(
-                            widget.post.alamat,
-                            style: TextStyle(fontSize: 16.0),
-                          ),
-                        ]),
-                        TableRow(children: [
-                          Text(
-                            "Usia      : ",
-                            style: TextStyle(fontSize: 16.0),
-                          ),
-                          Text(
-                            widget.post.usia + " tahun",
-                            style: TextStyle(fontSize: 16.0),
-                          ),
-                        ])
-                      ]),
+                        Text(
+                          widget.post.nama,
+                          style: TextStyle(fontSize: 16),
+                        )
+                      ],
+                    ),
+                    TableRow(children: [
+                      Text(
+                        "Alamat : ",
+                        style: TextStyle(fontSize: 16.0),
+                      ),
+                      Text(
+                        widget.post.alamat,
+                        style: TextStyle(fontSize: 16.0),
+                      ),
+                    ]),
+                    TableRow(children: [
+                      Text(
+                        "Usia      : ",
+                        style: TextStyle(fontSize: 16.0),
+                      ),
+                      Text(
+                        widget.post.usia + " tahun",
+                        style: TextStyle(fontSize: 16.0),
+                      ),
+                    ])
+                  ]),
                   Divider(
                     color: Colors.green,
                   ),
