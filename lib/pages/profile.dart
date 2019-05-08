@@ -63,7 +63,8 @@ class _ProfileState extends State<Profile> {
                   defaultVerticalAlignment: TableCellVerticalAlignment.middle,
                   defaultColumnWidth: IntrinsicColumnWidth(),
                   columnWidths: {
-                    2: FlexColumnWidth(1.0)
+                    1: FlexColumnWidth(.2),
+                    2: FlexColumnWidth(.8)
                   },
                   children: [
                     TableRow(children: [
