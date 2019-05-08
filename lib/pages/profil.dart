@@ -7,19 +7,19 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sung_user/model/user.dart';
+import 'package:Sungkawa/model/user.dart';
 
-class Profil extends StatefulWidget {
+class Profile extends StatefulWidget {
   final User pengguna;
   final String currentUserId;
 
-  Profil({this.pengguna, this.currentUserId});
+  Profile({this.pengguna, this.currentUserId});
 
   @override
-  _ProfilState createState() => _ProfilState();
+  _ProfileState createState() => _ProfileState();
 }
 
-class _ProfilState extends State<Profil> {
+class _ProfileState extends State<Profile> {
   String username = '', email = '', userid = '';
   SharedPreferences prefs;
   FirebaseUser currentUser;
@@ -32,25 +32,6 @@ class _ProfilState extends State<Profil> {
   final FocusNode focusNodeEmail = new FocusNode();
   final formkey = GlobalKey<FormState>();
 
-//  Future<FirebaseUser> _handleProfile() async{
-//    final FirebaseUser user = await _auth.currentUser() ;
-//    username = user.displayName;
-//    email = user.email;
-//
-//  }
-
-//  @override
-//  void initState() {
-//    // TODO: implement initState
-//    super.initState();
-//    userRef = FirebaseDatabase.instance
-//        .reference()
-//        .child('users')
-//        .child(widget.pengguna.key);
-////    print('useskey' + widget.pengguna.key);
-//    username = widget.pengguna.nama;
-//    email = widget.pengguna.email;
-//  }
   @override
   void initState() {
     // TODO: implement initState
@@ -66,9 +47,7 @@ class _ProfilState extends State<Profil> {
     print('username $username');
     usernameController = new TextEditingController(text: username);
     emailController = new TextEditingController(text: email);
-    setState(() {
-
-    });
+    setState(() {});
   }
 
   @override

@@ -1,31 +1,31 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class Comment {
-  String username;
-  String comment;
-  String email;
-  String uid;
-  FieldValue timestamp;
+  String _key;
+  String _fullName;
+  String _comment;
+  String _postId;
 
-  Comment({this.username, this.email,this.comment, this.uid, this.timestamp});
+  int _timestamp;
 
-  Map toMap(Comment comment){
-    var data = Map<String, dynamic>();
-    data['username'] = comment.username;
-    data['email'] = comment.email;
-    data['userid'] = comment.uid;
-    data['comment'] = comment.comment;
-    data['timestamp']= comment.timestamp;
+  Comment(
+      this._key, this._fullName, this._comment, this._postId, this._timestamp);
 
-    return data;
+  int get timestamp => _timestamp;
+
+  String get postId => _postId;
+
+  String get comment => _comment;
+
+  String get fullName => _fullName;
+
+  String get key => _key;
+
+  Comment.fromSnapshot(DataSnapshot snapshot) {
+    _key = snapshot.key;
+    _fullName = snapshot.value['fullName'];
+    _comment = snapshot.value['comment'];
+    _timestamp = snapshot.value['timestamp'];
+    _postId = snapshot.value['postId'];
   }
-
-  Comment.fromMap(Map<String , dynamic> mapData){
-    this.username = mapData['username'];
-    this.email = mapData['email'];
-    this.uid = mapData['userid'];
-    this.comment = mapData['comment'];
-    this.timestamp = mapData['timestamp'];
-  }
-
 }

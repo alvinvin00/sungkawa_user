@@ -1,14 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:sung_user/model/posting.dart';
+import 'package:Sungkawa/model/post.dart';
+import 'package:Sungkawa/pages/comment_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:sung_user/pages/comment_page.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:sung_user/model/comment.dart';
+import 'package:flutter/material.dart';
 
 class Detail extends StatefulWidget {
-  final Posting person;
-//  final DocumentReference documentReference;
-  Detail(this.person);
+  final Post post;
+
+  Detail(this.post);
 
   @override
   _DetailState createState() => _DetailState();
@@ -27,10 +25,10 @@ class _DetailState extends State<Detail> {
             pinned: true,
             snap: true,
             flexibleSpace: FlexibleSpaceBar(
-              title: Text(widget.person.nama),
+              title: Text(widget.post.nama),
               centerTitle: true,
               background: CachedNetworkImage(
-                imageUrl: widget.person.photo,
+                imageUrl: widget.post.photo,
                 placeholder: (context, url) => CircularProgressIndicator(),
                 errorWidget: (context, url, error) => Icon(Icons.warning),
                 fit: BoxFit.cover,
@@ -51,122 +49,75 @@ class _DetailState extends State<Detail> {
                     'Telah Meninggal Dunia',
                     textAlign: TextAlign.center,
                     style:
-                    TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+                        TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(
                     height: 30,
                   ),
                   Text(
-                    "Nama : " + widget.person.nama,
+                    "Nama : " + widget.post.nama,
                     style: TextStyle(fontSize: 16.0),
                   ),
                   Text(
-                    "Alamat : " + widget.person.alamat,
+                    "Alamat : " + widget.post.alamat,
                     style: TextStyle(fontSize: 16.0),
                   ),
                   Text(
-                    "Usia : " + widget.person.usia + " tahun",
-                    style: TextStyle(fontSize: 16.0),
-                  ),
-                  Divider(
-                    color: Colors.green,
-                  ),
-                  Text(
-                    "Tanggal Meninggal : " + widget.person.tanggalMeninggal,
+                    "Usia : " + widget.post.usia + " tahun",
                     style: TextStyle(fontSize: 16.0),
                   ),
                   Divider(
                     color: Colors.green,
                   ),
                   Text(
-                    'Disemayamkan di ' + widget.person.lokasiSemayam,
-                    style: TextStyle(fontSize: 16.0),
-                  ),
-                  Text(
-                    "Tanggal disemayamkan : " + widget.person.tanggalSemayam,
+                    "Tanggal Meninggal : " + widget.post.tanggalMeninggal,
                     style: TextStyle(fontSize: 16.0),
                   ),
                   Divider(
                     color: Colors.green,
                   ),
                   Text(
-                    widget.person.prosesi +
+                    'Disemayamkan di ' + widget.post.lokasiSemayam,
+                    style: TextStyle(fontSize: 16.0),
+                  ),
+                  Text(
+                    "Tanggal disemayamkan : " + widget.post.tanggalSemayam,
+                    style: TextStyle(fontSize: 16.0),
+                  ),
+                  Divider(
+                    color: Colors.green,
+                  ),
+                  Text(
+                    widget.post.prosesi +
                         ' di ' +
-                        widget.person.tempatMakam +
+                        widget.post.tempatMakam +
                         ' pada ' +
-                        widget.person.tanggalSemayam +
+                        widget.post.tanggalSemayam +
                         ' pukul ' +
-                        widget.person.waktuSemayam,
+                        widget.post.waktuSemayam,
                     style: TextStyle(fontSize: 16.0),
                   ),
                   Divider(
                     color: Colors.green,
                   ),
-                  SizedBox(height: 40.0,),
-//                  commentList(),
-                  FlatButton(onPressed: (){
-                    Navigator.push(context, MaterialPageRoute(builder: (context)=>CommentScreen()));
-                  },
-                      child:Text('Lihat Ucapan Belasungkawa') ),
-
+                  SizedBox(
+                    height: 40.0,
+                  ),
                 ],
               ),
             ),
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => CommentPage(widget.post)));
+        },
+        child: Icon(Icons.comment),
+      ),
     );
-    
   }
-
-//  commentList() {
-//      print("Document Ref : ${widget.documentReference.path}");
-//      return Flexible(
-//        child: StreamBuilder(
-//          stream: widget.documentReference
-//              .collection("comments")
-//              .orderBy('timestamp', descending: false)
-//              .snapshots(),
-//          builder: ((context, AsyncSnapshot<QuerySnapshot> snapshot) {
-//            if (!snapshot.hasData) {
-//              return Center(child: CircularProgressIndicator());
-//            } else {
-//              return ListView.builder(
-//                itemCount: snapshot.data.documents.length,
-//                itemBuilder: ((context, index) =>
-//                    commentItem(snapshot.data.documents[0-1])),
-//              );
-//            }
-//          }),
-//        ),
-//      );
-//
-//  }
-//  Widget commentItem(DocumentSnapshot snapshot) {
-//    return Padding(
-//      padding: const EdgeInsets.all(12.0),
-//      child: Row(
-//        children: <Widget>[
-//          Padding(
-//            padding: const EdgeInsets.only(left: 8.0),
-//          ),
-//          SizedBox(
-//            width: 15.0,
-//          ),
-//          Row(
-//            children: <Widget>[
-//              Text(
-//                snapshot.data['username'],
-//                style: TextStyle(fontWeight: FontWeight.bold),
-//              ),
-//              Padding(
-//                padding: const EdgeInsets.only(left: 8.0),
-//                child: Text(snapshot.data['comment']),
-//              )
-//            ],
-//          )
-//        ],
-//      ),
-//    );
-//  }
 }

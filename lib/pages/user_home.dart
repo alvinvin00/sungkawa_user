@@ -1,207 +1,187 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+
+import 'package:Sungkawa/model/post.dart';
+import 'package:Sungkawa/pages/detail.dart';
+import 'package:Sungkawa/utilities/crud.dart';
+import 'package:Sungkawa/utilities/utilities.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:intl/intl.dart';
-import 'package:sung_user/model/posting.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:sung_user/model/user.dart';
-import 'package:sung_user/utilities/utilities.dart';
-import 'package:sung_user/pages/detail.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
 }
 
-final postref = FirebaseDatabase.instance.reference().child('posts');
+final _postRef = FirebaseDatabase.instance
+    .reference()
+    .child('posts')
+    .orderByChild('timestamp');
 Utilities util = new Utilities();
+CRUD crud = new CRUD();
 
 class _HomePageState extends State<HomePage> {
-  var title;
-  var nama, umur, lokasi, semayam, keluarga, post,user;
+  List<Post> _postList = new List();
 
-  List<Posting> postList = new List();
-  final GlobalKey<RefreshIndicatorState> _refreshPageKey =
-  new GlobalKey<RefreshIndicatorState>();
+  StreamSubscription<Event> _onPostAddedSubscription;
+  StreamSubscription<Event> _onPostChangedSubscription;
 
-  StreamSubscription<Event> onPostAddedSubscription;
-  StreamSubscription<Event> onPostChangedSubscription;
-  StreamSubscription<Event> onPostDeletedSubscription;
-  int timestamp;
-
-  void _onPostAdded(Event event) {
-    print('Posting ditampilkan');
-    post = new Posting.fromsnapShot(event.snapshot);
-    print(post);
+  _onPostAdded(Event event) {
     setState(() {
-      postList.add(post);
-      postList.sort((i, j) => j.timestamp.compareTo(i.timestamp));
+      _postList.add(Post.fromSnapshot(event.snapshot));
+      _postList.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     });
   }
 
-  void _onPostChanged(Event event) {
-    print('Posting diupdate');
-    post = new Posting.fromsnapShot(event.snapshot);
+  _onPostChanged(Event event) {
+    var oldEntry = _postList.singleWhere((entry) {
+      return entry.key == event.snapshot.key;
+    });
+
     setState(() {
-      postList.add(post);
-      postList.sort((i, j) => j.timestamp.compareTo(i.timestamp));
+      _postList[_postList.indexOf(oldEntry)] =
+          Post.fromSnapshot(event.snapshot);
     });
   }
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    postList.clear();
-    onPostAddedSubscription = postref.onChildAdded.listen(_onPostAdded);
-    onPostChangedSubscription = postref.onChildChanged.listen(_onPostChanged);
-
+    _postList.clear();
+    _onPostAddedSubscription = _postRef.onChildAdded.listen(_onPostAdded);
+    _onPostChangedSubscription = _postRef.onChildChanged.listen(_onPostChanged);
+    _postList.sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
 
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
-    onPostAddedSubscription.cancel();
-    onPostChangedSubscription.cancel();
-  }
-
-  @override
-  void didUpdateWidget(HomePage oldWidget) {
-    // TODO: implement didUpdateWidget
-    super.didUpdateWidget(oldWidget);
-    postList.clear();
-    onPostAddedSubscription = postref.onChildAdded.listen(_onPostAdded);
-    onPostChangedSubscription = postref.onChildChanged.listen(_onPostChanged);
-    postList.sort((i, j) => j.timestamp.compareTo(i.timestamp));
+    _postList.clear();
+    _onPostAddedSubscription.cancel();
+    _onPostChangedSubscription.cancel();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: postList == null
-          ? const Center(
-        child: const Text(
-          "Data Masih Kosong",
-          style: TextStyle(fontSize: 40),
-        ),
-      )
-          : ListView.builder(
-        itemBuilder: (buildContext, int index) {
-          Posting posting = postList[index];
+    return buildPage();
+  }
 
-          return Padding(
-            padding: const EdgeInsets.only(left: 5.0, right: 5.0),
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => Detail(posting)));
-              },
-              child: Card(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15.0)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 16.0,
-                        right: 16.0,
-                        top: 10.0,
-                        bottom: 10.0,
-                      ),
-                      child: Row(
-                        children: <Widget>[
-                          Text(
-                            postList[index].nama,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18.0,
-                            ),
-                          ),
-                          Expanded(
-                            child: SizedBox(),
-                          ),
-                          Text(
-                            util.convertTimestamp(
-                              postList[index].timestamp,
-                            ),
-                            style: TextStyle(
-                                fontSize: 14.0, color: Colors.grey),
-                          )
-                        ],
-                      ),
+  Widget buildPage() {
+    if (_postList.length == 0)
+      return Center(child: CircularProgressIndicator());
+
+    return ListView.builder(
+      shrinkWrap: true,
+      itemCount: _postList.length,
+      itemBuilder: (buildContext, int index) {
+        return Padding(
+          padding: const EdgeInsets.only(left: 5.0, right: 5.0),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => Detail(_postList[index])));
+            },
+            child: Card(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15.0)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      top: 10.0,
+                      bottom: 10.0,
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 16.0,
-                        right: 16.0,
-                        bottom: 10.0,
-                      ),
-                      child: Row(
-                        children: <Widget>[
-                          Text(
-                            postList[index].usia + ' tahun',
-                            style: TextStyle(
-                              fontSize: 14.0,
-                              color: Colors.grey,
-                            ),
+                    child: Row(
+                      children: <Widget>[
+                        Text(
+                          _postList[index].nama,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18.0,
                           ),
-                          Expanded(
-                            child: SizedBox(),
+                        ),
+                        Expanded(
+                          child: SizedBox(),
+                        ),
+                        Text(
+                          util.convertTimestamp(
+                            _postList[index].timestamp,
                           ),
-                          buildStatusText(index)
-                        ],
-                      ),
+                          style: TextStyle(fontSize: 14.0, color: Colors.grey),
+                        )
+                      ],
                     ),
-                    Center(
-                      child: CachedNetworkImage(
-                        placeholder: (context, url) =>
-                            CircularProgressIndicator(),
-                        errorWidget: (context, url, error) =>
-                            Icon(Icons.error),
-                        imageUrl: postList[index].photo,
-                        height: 240.0,
-                        width: double.infinity,
-                        fit: BoxFit.fitWidth,
-                      ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      bottom: 10.0,
                     ),
-                    SizedBox(
-                      height: 20,
-                    )
-                  ],
-                ),
+                    child: Row(
+                      children: <Widget>[
+                        Text(
+                          _postList[index].usia + ' tahun',
+                          style: TextStyle(
+                            fontSize: 14.0,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        Expanded(
+                          child: SizedBox(),
+                        ),
+                        buildStatusText(_postList[index])
+                      ],
+                    ),
+                  ),
+                  Center(
+                    child: CachedNetworkImage(
+                      placeholder: (context, url) =>
+                          CircularProgressIndicator(),
+                      errorWidget: (context, url, error) => Icon(Icons.error),
+                      imageUrl: _postList[index].photo,
+                      height: 240.0,
+                      width: double.infinity,
+                      fit: BoxFit.fitWidth,
+                    ),
+                  ),
+                  SizedBox(
+                    height: 20,
+                  )
+                ],
               ),
             ),
-          );
-        },
-        itemCount: postList == null ? 0 : postList.length,
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget buildStatusText(int index) {
+  Widget buildStatusText(data) {
     final dateFormat = DateFormat('dd/MM/yyyy');
-    final timeFormat = DateFormat('hh:mm a');
 
-    DateTime tanggalMeninggal =
-    dateFormat.parse(postList[index].tanggalMeninggal);
-    DateTime tanggalSemayam = dateFormat.parse(postList[index].tanggalSemayam);
-    DateTime waktuSemayam = timeFormat.parse(postList[index].waktuSemayam);
+    DateTime tanggalMeninggal = dateFormat.parse(data.tanggalMeninggal);
 
     var now = DateTime.now();
+
     print('tanggal = $now');
-    if (now.isAfter(tanggalSemayam))
-      return Text(
-        ' Telah Disemayamkan',
-        style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold),
-      );
+
     if (now.isAfter(tanggalMeninggal))
       return Text(
-        postList[index].prosesi,
+        data.prosesi,
         style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+      );
+    else
+      return Text(
+        ' Telah Disemayamkan',
+        style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
       );
   }
 }

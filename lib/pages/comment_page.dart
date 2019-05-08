@@ -1,165 +1,179 @@
+import 'dart:async';
+
+import 'package:Sungkawa/model/comment.dart';
+import 'package:Sungkawa/model/post.dart';
+import 'package:Sungkawa/utilities/crud.dart';
+import 'package:Sungkawa/utilities/utilities.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:sung_user/model/user.dart';
-import 'package:sung_user/model/comment.dart';
-import 'package:sung_user/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class CommentScreen extends StatefulWidget {
-  final String commentId;
-  final String username;
-  final String email;
+class CommentPage extends StatefulWidget {
+  CommentPage(this.post);
 
-  const CommentScreen({this.commentId, this.username, this.email});
+  final Post post;
 
   @override
-  _CommentScreenState createState() => new _CommentScreenState(
-      commentId: this.commentId, username: this.username, email: this.email);
+  _CommentPageState createState() => _CommentPageState();
 }
 
-class _CommentScreenState extends State<CommentScreen> {
-  final String commentId;
-  final String username;
-  final String email;
+class _CommentPageState extends State<CommentPage> {
+  String fullName, userId;
+  CRUD crud = new CRUD();
+  Utilities util = new Utilities();
+  var _commentRef;
 
-  final TextEditingController _commentController = new TextEditingController();
+  final commentController = new TextEditingController();
+  final commentNode = new FocusNode();
 
-  _CommentScreenState({this.commentId, this.username, this.email});
+  SharedPreferences prefs;
+  List<Comment> _commentList = new List();
+  StreamSubscription<Event> _onCommentAddedSubscription;
+  StreamSubscription<Event> _onCommentChangedSubscription;
+
+  _onCommentAdded(Event event) {
+    setState(() {
+      _commentList.add(Comment.fromSnapshot(event.snapshot));
+    });
+  }
+
+  _onCommentChanged(Event event) {
+    var oldEntry = _commentList.singleWhere((entry) {
+      return entry.key == event.snapshot.key;
+    });
+
+    setState(() {
+      _commentList[_commentList.indexOf(oldEntry)] =
+          Comment.fromSnapshot(event.snapshot);
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _commentRef = FirebaseDatabase.instance
+        .reference()
+        .child('comments')
+        .child(widget.post.key)
+        .orderByChild('timestamp');
+    readLocal();
+    _commentList.clear();
+    _onCommentAddedSubscription =
+        _commentRef.onChildAdded.listen(_onCommentAdded);
+    _onCommentChangedSubscription =
+        _commentRef.onChildChanged.listen(_onCommentChanged);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _commentList.clear();
+    _onCommentAddedSubscription.cancel();
+    _onCommentChangedSubscription.cancel();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return new Scaffold(
-      appBar: new AppBar(
-        title: new Text(
-          "Ucapan Belasungkawa",
-          style: new TextStyle(color: Colors.black),
-        ),
-        backgroundColor: Colors.blue,
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Komentar'),
       ),
-      body: buildPage(),
-    );
-  }
-
-  Widget buildPage() {
-    return new Column(
-      children: [
-        new Expanded(
-          child: buildComments(),
-        ),
-        new Divider(),
-        new ListTile(
-          title: new TextFormField(
-            controller: _commentController,
-            decoration:
-                new InputDecoration(hintText: 'Tulis Ucapan Belasungkawa...'),
-            onFieldSubmitted: addComment,
+      body: Column(
+        children: <Widget>[
+          Expanded(
+            child: Container(
+              child: buildCommentPage(),
+            ),
           ),
-          trailing: new OutlineButton(
-            onPressed: () {
-              addComment(_commentController.text);
-            },
-            borderSide: BorderSide.none,
-            child: new Text("Post"),
-          ),
-        ),
-      ],
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: ListTile(
+              title: TextField(
+                controller: commentController,
+                textInputAction: TextInputAction.send,
+                onEditingComplete: sendComment,
+                focusNode: commentNode,
+                decoration:
+                    InputDecoration(hintText: 'Tuliskan Komentarmu disini'),
+              ),
+              trailing:
+                  IconButton(icon: Icon(Icons.send), onPressed: sendComment),
+            ),
+          )
+        ],
+      ),
     );
   }
 
-  Widget buildComments() {
-    return new FutureBuilder<List<Comment>>(
-        future: getComments(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData)
-            return new Container(
-                alignment: FractionalOffset.center,
-                child: new CircularProgressIndicator());
+  Widget buildCommentPage() {
+    if (_commentList.length != 0) {
+      return ListView.builder(
+          itemCount: _commentList.length,
+          itemBuilder: (context, index) {
+            return Dismissible(
+              background: Container(
+                color: Colors.red,
+                child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Icon(
+                      Icons.delete_forever,
+                      color: Colors.white,
+                    )),
+              ),
+              direction: DismissDirection.startToEnd,
+              onDismissed: (direction) {
+                crud.deleteComment(widget.post.key, _commentList[index].key);
+                setState(() {
+                  _commentList.removeAt(index);
+                });
 
-          return new ListView(
-            children: snapshot.data,
-          );
-        });
+                Scaffold.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Comment Removed'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: ListTile(
+                title: Text(
+                  _commentList[index].fullName,
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                trailing:
+                    Text(util.convertTimestamp(_commentList[index].timestamp)),
+                subtitle: Text(_commentList[index].comment),
+              ),
+              key: Key(_commentList[index].key),
+            );
+          });
+    }
+    if (crud.checkPostEmpty()==true)
+      return Center(
+        child: Text('No Data'),
+      );
+    return Center(
+      child: CircularProgressIndicator(),
+    );
   }
 
-  Future<List<Comment>> getComments() async {
-    List<Comment> comments = [];
-
-    QuerySnapshot data = await Firestore.instance
-        .collection("messages")
-        .document(commentId)
-        .collection("comments")
-        .getDocuments();
-    data.documents.forEach((DocumentSnapshot doc) {
-      comments.add(new Comment.fromDocument(doc));
+  void sendComment() {
+    print('Comment : ' + commentController.text);
+    setState(() {
+      crud.addComment(widget.post.key, {
+        'fullName': fullName,
+        'comment': commentController.text,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'userId': userId,
+      }).whenComplete(() {
+        commentController.clear();
+        commentNode.unfocus();
+      });
     });
-
-    return comments;
   }
 
-  addComment(String comment) {
-    _commentController.clear();
-    Firestore.instance
-        .collection("messages")
-        .document(commentId)
-        .collection("comments")
-        .add({
-      'username': currentCommentModel.nama,
-      "email": currentCommentModel.email,
-      "userid": currentCommentModel.uid,
-      "comment": comment,
-      'timestamp': new DateTime.now().toUtc()
-    });
-
-    //adds to postOwner's activity feed
-//    Firestore.instance
-//        .collection("insta_a_feed")
-//        .document(username)
-//        .collection("items")
-//        .add({
-//      "username": currentUserModel.username,
-//      "userId": currentUserModel.id,
-//      "type": "comment",
-//      "userProfileImg": currentUserModel.photoUrl,
-//      "commentData": comment,
-//      "timestamp": new DateTime.now().toString(),
-//      "postId": commentId,
-//      "mediaUrl": email,
-//    });
-  }
-}
-
-class Comment extends StatelessWidget {
-  final String username;
-  final String userId;
-  final String comment;
-  final String timestamp;
-  final String email;
-
-  Comment({this.username, this.userId, this.comment, this.timestamp, this.email});
-
-  factory Comment.fromDocument(DocumentSnapshot document) {
-    return new Comment(
-      username: document['username'],
-      email: document['email'],
-      userId: document['userid'],
-      comment: document["comment"],
-      timestamp: document["timestamp"],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return new Column(
-      children: <Widget>[
-        new ListTile(
-          title: new Text(username),
-          subtitle: new Text(comment),
-//          leading: new CircleAvatar(
-//            backgroundImage: new NetworkImage(avatarUrl),
-//          ),
-        ),
-        new Divider(),
-      ],
-    );
+  void readLocal() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    fullName = prefs.getString('nama');
+    userId = prefs.getString('userId');
   }
 }
