@@ -30,6 +30,7 @@ class _CommentPageState extends State<CommentPage> {
   List<Comment> _commentList = new List();
   StreamSubscription<Event> _onCommentAddedSubscription;
   StreamSubscription<Event> _onCommentChangedSubscription;
+  StreamSubscription<Event> _onCommentRemovedSubscription;
 
   _onCommentAdded(Event event) {
     setState(() {
@@ -48,6 +49,16 @@ class _CommentPageState extends State<CommentPage> {
     });
   }
 
+  _onCommentRemoved(Event event) {
+    var deletedEntry = _commentList.singleWhere((entry) {
+      return entry.key == event.snapshot.key;
+    });
+    print('on child removed called');
+    setState(() {
+      _commentList.remove(deletedEntry);
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -62,6 +73,8 @@ class _CommentPageState extends State<CommentPage> {
         _commentRef.onChildAdded.listen(_onCommentAdded);
     _onCommentChangedSubscription =
         _commentRef.onChildChanged.listen(_onCommentChanged);
+    _onCommentRemovedSubscription =
+        _commentRef.onChildRemoved.listen(_onCommentRemoved);
   }
 
   @override
@@ -70,6 +83,7 @@ class _CommentPageState extends State<CommentPage> {
     _commentList.clear();
     _onCommentAddedSubscription.cancel();
     _onCommentChangedSubscription.cancel();
+    _onCommentRemovedSubscription.cancel();
   }
 
   @override
@@ -94,10 +108,10 @@ class _CommentPageState extends State<CommentPage> {
                 onEditingComplete: sendComment,
                 focusNode: commentNode,
                 decoration:
-                    InputDecoration(hintText: 'Tuliskan Komentarmu disini'),
+                InputDecoration(hintText: 'Tuliskan Komentarmu disini'),
               ),
               trailing:
-                  IconButton(icon: Icon(Icons.send), onPressed: sendComment),
+              IconButton(icon: Icon(Icons.send), onPressed: sendComment),
             ),
           )
         ],
@@ -140,14 +154,14 @@ class _CommentPageState extends State<CommentPage> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 trailing:
-                    Text(util.convertTimestamp(_commentList[index].timestamp)),
+                Text(util.convertTimestamp(_commentList[index].timestamp)),
                 subtitle: Text(_commentList[index].comment),
               ),
               key: Key(_commentList[index].key),
             );
           });
     }
-    if (crud.checkPostEmpty()==true)
+    if (crud.checkPostEmpty() == true)
       return Center(
         child: Text('No Data'),
       );
@@ -162,7 +176,9 @@ class _CommentPageState extends State<CommentPage> {
       crud.addComment(widget.post.key, {
         'fullName': fullName,
         'comment': commentController.text,
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'timestamp': DateTime
+            .now()
+            .millisecondsSinceEpoch,
         'userId': userId,
       }).whenComplete(() {
         commentController.clear();

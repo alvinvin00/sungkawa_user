@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:Sungkawa/pages/about.dart';
 import 'package:Sungkawa/pages/login.dart';
+import 'package:Sungkawa/pages/profile.dart';
 import 'package:Sungkawa/pages/user_home.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -17,8 +18,6 @@ void main() {
     runApp(MyApp());
   });
 }
-
-enum Pilihan { about, signOut }
 
 final GoogleSignIn googleSignIn = GoogleSignIn();
 
@@ -51,10 +50,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   var connectionStatus;
   SharedPreferences prefs;
   GoogleSignIn user;
+  String fullName, userId;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     checkConnectivity();
     getCurrentUser().then((userId) {
@@ -102,7 +101,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             actions: <Widget>[
                               CupertinoActionSheetAction(
                                   onPressed: () {
-                                    Navigator.push(
+                                    Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                Profile(
+                                                  currentUserId: userId,
+                                                )));
+                                  },
+                                  child: Text("Profil")),
+                              CupertinoActionSheetAction(
+                                  onPressed: () {
+                                    Navigator.pushReplacement(
                                         context,
                                         MaterialPageRoute(
                                             builder: (context) => About()));
@@ -162,5 +172,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       print('Connectivity Result: not connected');
       return false;
     }
+  }
+
+  void readLocal() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    fullName = prefs.getString('nama');
+    userId = prefs.getString('userId');
   }
 }

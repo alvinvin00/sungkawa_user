@@ -22,13 +22,11 @@ class _LoginState extends State<Login> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Scaffold(
       body: new Padding(
         padding: const EdgeInsets.all(20.0),
@@ -83,7 +81,7 @@ class _LoginState extends State<Login> {
     print('Adding to database');
     FirebaseDatabase.instance
         .reference()
-        .child('admins')
+        .child('users')
         .child(googleAccount.id)
         .once()
         .then((snapshot) {
