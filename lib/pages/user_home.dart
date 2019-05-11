@@ -27,7 +27,6 @@ class _HomePageState extends State<HomePage> {
 
   StreamSubscription<Event> _onPostAddedSubscription;
   StreamSubscription<Event> _onPostChangedSubscription;
-  StreamSubscription<Event> _onPostRemovedSubscription;
 
   _onPostAdded(Event event) {
     setState(() {
@@ -47,23 +46,12 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  _onPostRemoved(Event event) {
-    var deletedEntry = _postList.singleWhere((entry) {
-      return entry.key == event.snapshot.key;
-    });
-    print('on child removed called');
-    setState(() {
-      _postList.remove(deletedEntry);
-    });
-  }
-
   @override
   void initState() {
     super.initState();
     _postList.clear();
     _onPostAddedSubscription = _postRef.onChildAdded.listen(_onPostAdded);
     _onPostChangedSubscription = _postRef.onChildChanged.listen(_onPostChanged);
-    _onPostRemovedSubscription = _postRef.onChildRemoved.listen(_onPostRemoved);
     _postList.sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
 
@@ -73,7 +61,6 @@ class _HomePageState extends State<HomePage> {
     _postList.clear();
     _onPostAddedSubscription.cancel();
     _onPostChangedSubscription.cancel();
-    _onPostRemovedSubscription.cancel();
   }
 
   @override
@@ -141,7 +128,7 @@ class _HomePageState extends State<HomePage> {
                     child: Row(
                       children: <Widget>[
                         Text(
-                          _postList[index].usia + ' tahun',
+                          'Usia : ' + _postList[index].usia + ' tahun',
                           style: TextStyle(
                             fontSize: 14.0,
                             color: Colors.grey,
@@ -151,6 +138,31 @@ class _HomePageState extends State<HomePage> {
                           child: SizedBox(),
                         ),
                         buildStatusText(_postList[index])
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      bottom: 10.0,
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        Text(
+                          'Alamat : ' + _postList[index].alamat,
+                          style: TextStyle(
+                            fontSize: 14.0,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        Expanded(
+                          child: SizedBox(),
+                        ),
+                        Text(
+                          "Agama : " + _postList[index].agama,
+                          style: TextStyle(fontSize: 14.0, color: Colors.grey),
+                        )
                       ],
                     ),
                   ),

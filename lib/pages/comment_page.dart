@@ -2,10 +2,13 @@ import 'dart:async';
 
 import 'package:Sungkawa/model/comment.dart';
 import 'package:Sungkawa/model/post.dart';
+import 'package:Sungkawa/model/user.dart';
 import 'package:Sungkawa/utilities/crud.dart';
 import 'package:Sungkawa/utilities/utilities.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CommentPage extends StatefulWidget {
@@ -17,11 +20,20 @@ class CommentPage extends StatefulWidget {
   _CommentPageState createState() => _CommentPageState();
 }
 
+enum AuthStatus { signedIn, notSignedIn }
+
 class _CommentPageState extends State<CommentPage> {
+  User user;
+
   String fullName, userId;
+
   CRUD crud = new CRUD();
   Utilities util = new Utilities();
+
+  final GoogleSignIn googleSignIn = GoogleSignIn();
+  final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
   var _commentRef;
+  AuthStatus _authStatus = AuthStatus.notSignedIn;
 
   final commentController = new TextEditingController();
   final commentNode = new FocusNode();
@@ -69,10 +81,13 @@ class _CommentPageState extends State<CommentPage> {
         .orderByChild('timestamp');
     readLocal();
     _commentList.clear();
+
     _onCommentAddedSubscription =
         _commentRef.onChildAdded.listen(_onCommentAdded);
     _onCommentChangedSubscription =
         _commentRef.onChildChanged.listen(_onCommentChanged);
+    _onCommentRemovedSubscription =
+        _commentRef.onChildRemoved.listen(_onCommentRemoved);
     _onCommentRemovedSubscription =
         _commentRef.onChildRemoved.listen(_onCommentRemoved);
   }
@@ -90,7 +105,10 @@ class _CommentPageState extends State<CommentPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Komentar'),
+        title: Text(
+          'Komentar',
+          style: TextStyle(color: Colors.white),
+        ),
       ),
       body: Column(
         children: <Widget>[
@@ -110,8 +128,20 @@ class _CommentPageState extends State<CommentPage> {
                 decoration:
                 InputDecoration(hintText: 'Tuliskan Komentarmu disini'),
               ),
-              trailing:
-              IconButton(icon: Icon(Icons.send), onPressed: sendComment),
+              trailing: IconButton(
+                  icon: Icon(Icons.send),
+                  onPressed: () {
+                    switch (_authStatus) {
+                      case AuthStatus.notSignedIn:
+                        handleSignIn().then((_) {
+                          sendComment();
+                        });
+                        break;
+                      case AuthStatus.signedIn:
+                        sendComment();
+                        break;
+                    }
+                  }),
             ),
           )
         ],
@@ -124,53 +154,23 @@ class _CommentPageState extends State<CommentPage> {
       return ListView.builder(
           itemCount: _commentList.length,
           itemBuilder: (context, index) {
-            return Dismissible(
-              background: Container(
-                color: Colors.red,
-                child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Icon(
-                      Icons.delete_forever,
-                      color: Colors.white,
-                    )),
+            return ListTile(
+              title: Text(
+                _commentList[index].userName,
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              direction: DismissDirection.startToEnd,
-              onDismissed: (direction) {
-                crud.deleteComment(widget.post.key, _commentList[index].key);
-                setState(() {
-                  _commentList.removeAt(index);
-                });
-
-                Scaffold.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Comment Removed'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              child: ListTile(
-                title: Text(
-                  _commentList[index].fullName,
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                trailing:
-                Text(util.convertTimestamp(_commentList[index].timestamp)),
-                subtitle: Text(_commentList[index].comment),
-              ),
-              key: Key(_commentList[index].key),
+              trailing:
+              Text(util.convertTimestamp(_commentList[index].timestamp)),
+              subtitle: Text(_commentList[index].comment),
             );
           });
     }
-    if (crud.checkPostEmpty() == true)
-      return Center(
-        child: Text('No Data'),
-      );
-    return Center(
-      child: CircularProgressIndicator(),
-    );
   }
 
   void sendComment() {
+    fullName = prefs.getString('nama');
+    userId = prefs.getString('userId');
+
     print('Comment : ' + commentController.text);
     setState(() {
       crud.addComment(widget.post.key, {
@@ -191,5 +191,40 @@ class _CommentPageState extends State<CommentPage> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     fullName = prefs.getString('nama');
     userId = prefs.getString('userId');
+  }
+
+  Future handleSignIn() async {
+    GoogleSignInAccount googleAccount = await googleSignIn.signIn();
+    GoogleSignInAuthentication googleAuth = await googleAccount.authentication;
+    final AuthCredential credential = GoogleAuthProvider.getCredential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    prefs = await SharedPreferences.getInstance();
+
+    prefs.setString('userId', googleAccount.id);
+    prefs.setString('nama', googleAccount.displayName);
+    prefs.setString('email', googleAccount.email);
+
+    firebaseAuth.signInWithCredential(credential).whenComplete(() {
+      addToDatabase(googleAccount);
+    });
+  }
+
+  Future addToDatabase(GoogleSignInAccount googleAccount) async {
+    print('Adding to database');
+    FirebaseDatabase.instance
+        .reference()
+        .child('users')
+        .child(googleAccount.id)
+        .once()
+        .then((snapshot) {
+      if (snapshot.value == null) {
+        print('Added to database');
+        crud.addUser(googleAccount.id,
+            {'nama': googleAccount.displayName, 'email': googleAccount.email});
+      }
+    });
   }
 }

@@ -87,8 +87,11 @@ class _LoginState extends State<Login> {
         .then((snapshot) {
       if (snapshot.value == null) {
         print('Added to database');
-        crud.addAdmin(googleAccount.id,
-            {'nama': googleAccount.displayName, 'email': googleAccount.email});
+        crud.addUser(googleAccount.id, {
+          'fullName': googleAccount.displayName,
+          'email': googleAccount.email,
+          'userName': googleAccount.displayName,
+        });
       }
     });
   }

@@ -1,11 +1,10 @@
-import 'dart:async';
-
 import 'package:Sungkawa/pages/about.dart';
 import 'package:Sungkawa/pages/login.dart';
 import 'package:Sungkawa/pages/profile.dart';
 import 'package:Sungkawa/pages/user_home.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,16 +18,18 @@ void main() {
   });
 }
 
+enum Pilihan { about, signOut, profil }
+
 final GoogleSignIn googleSignIn = GoogleSignIn();
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Sungkawa',
+      title: 'SUNGKAWA',
       debugShowCheckedModeBanner: false,
-      theme: new ThemeData(
-          primarySwatch: Colors.green,
+      theme: ThemeData(
+          primarySwatch: Colors.lightBlue,
           pageTransitionsTheme: PageTransitionsTheme(builders: {
             TargetPlatform.android: CupertinoPageTransitionsBuilder(),
             TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
@@ -46,14 +47,17 @@ class DashboardScreen extends StatefulWidget {
 enum AuthStatus { signedIn, notSignedIn }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  AuthStatus _authStatus;
-  var connectionStatus;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn googleSignIn = GoogleSignIn();
+  FirebaseUser currentUser;
   SharedPreferences prefs;
-  GoogleSignIn user;
-  String fullName, userId;
+  bool isLoading;
+  AuthStatus _authStatus = AuthStatus.notSignedIn;
+  var connectionStatus;
 
   @override
   void initState() {
+    // TODO: implement initState
     super.initState();
     checkConnectivity();
     getCurrentUser().then((userId) {
@@ -67,7 +71,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<String> getCurrentUser() async {
     try {
       FirebaseUser user = await FirebaseAuth.instance.currentUser();
-      return user.uid;
+      return user != null ? user.uid : null;
     } catch (e) {
       print('Error: $e');
       return null;
@@ -75,79 +79,99 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   @override
-  // ignore: missing_return
   Widget build(BuildContext context) {
-    switch (_authStatus) {
-      case AuthStatus.notSignedIn:
-        return Login();
-
-      case AuthStatus.signedIn:
-        return Scaffold(
-          appBar: AppBar(
-            centerTitle: true,
-            title: Text(
-              'Sungkawa',
-              textAlign: TextAlign.center,
-            ),
-            actions: <Widget>[
-              FlatButton(
-                  onPressed: () {
-                    showCupertinoModalPopup(
-                        context: context,
-                        builder: (context) => CupertinoActionSheet(
-                            title: const Text(
-                              'Pilihan menu',
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Sungkawa',
+          style: TextStyle(color: Colors.white),
+        ),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(Icons.more_vert, color: Colors.white),
+            onPressed: () {
+              showCupertinoModalPopup(
+                  context: context,
+                  builder: (context) =>
+                      CupertinoActionSheet(
+                          title: const Text(
+                            'Pilihan menu',
+                          ),
+                          actions: <Widget>[
+                            CupertinoActionSheetAction(
+                              onPressed: () {
+                                switch (_authStatus) {
+                                  case AuthStatus.notSignedIn:
+                                    handleSignIn().then((_) {
+                                      Navigator.pushReplacement(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) => Profile()));
+                                    });
+                                    break;
+                                  case AuthStatus.signedIn:
+                                    Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => Profile()));
+                                    break;
+                                }
+                              },
+                              child: Text('Profil'),
                             ),
-                            actions: <Widget>[
-                              CupertinoActionSheetAction(
-                                  onPressed: () {
-                                    Navigator.pushReplacement(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                Profile(
-                                                  currentUserId: userId,
-                                                )));
-                                  },
-                                  child: Text("Profil")),
-                              CupertinoActionSheetAction(
-                                  onPressed: () {
-                                    Navigator.pushReplacement(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) => About()));
-                                  },
-                                  child: Text('Tentang Kami')),
-                              CupertinoActionSheetAction(
-                                  isDestructiveAction: true,
-                                  onPressed: signOut,
-                                  child: Text(
-                                    'Sign Out',
-                                  )),
-                            ],
-                            cancelButton: CupertinoActionSheetAction(
+                            CupertinoActionSheetAction(
                                 onPressed: () {
-                                  Navigator.pop(context);
+                                  Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => About()));
                                 },
+                                child: Text('Tentang Kami')),
+                            CupertinoActionSheetAction(
+                                isDestructiveAction: true,
+                                onPressed: signOut,
                                 child: Text(
-                                  'Cancel',
-                                  style: TextStyle(color: Colors.red),
-                                ))));
-                  },
-                  child: Text(
-                    'Options',
-                    style: TextStyle(color: Colors.white),
-                  ))
-            ],
-            backgroundColor: Colors.green[800],
-          ),
-          body: HomePage(),
-        );
+                                  'Sign Out',
+                                )),
+                          ],
+                          cancelButton: CupertinoActionSheetAction(
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              child: Text(
+                                'Cancel',
+                                style: TextStyle(color: Colors.red),
+                              ))));
+            },
+          )
+        ],
+        backgroundColor: Colors.lightBlue,
+      ),
+      body: HomePage(),
+    );
+  }
 
-      default:
-        return Center(
-          child: CircularProgressIndicator(),
-        );
+  void selectedAction(Pilihan value) {
+    print('You choose : $value');
+    if (value == Pilihan.about) {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (BuildContext context) => About()));
+    }
+    if (value == Pilihan.signOut) {
+      signOut();
+    }
+    if (value == Pilihan.profil) {
+      switch (_authStatus) {
+        case AuthStatus.notSignedIn:
+          Navigator.push(
+              context, MaterialPageRoute(builder: (context) => Login()));
+          break;
+        case AuthStatus.signedIn:
+          print('Profil dibuka');
+          Navigator.push(context,
+              MaterialPageRoute(builder: (BuildContext context) => Profile()));
+          break;
+      }
     }
   }
 
@@ -155,28 +179,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
     FirebaseAuth.instance.signOut();
     googleSignIn.signOut();
     _authStatus = AuthStatus.notSignedIn;
-    Navigator.pop(context);
+//    Scaffold.of(_snackBarContext).showSnackBar(SnackBar(content: Text("Signed Out"),
+//    duration: Duration(seconds: 2),));
+    SnackBar(
+      content: Text('Signed Out'),
+      duration: Duration(seconds: 2),
+    );
+
     Navigator.pushReplacement(
         context, MaterialPageRoute(builder: (BuildContext context) => Login()));
   }
 
-  static Future<bool> checkConnectivity() async {
-    var connectivityResult = await (Connectivity().checkConnectivity());
-    if (connectivityResult == ConnectivityResult.mobile) {
-      print('Connectivity Result: $connectivityResult');
-      return true;
-    } else if (connectivityResult == ConnectivityResult.wifi) {
-      print('Connectivity Result: $connectivityResult');
-      return true;
-    } else {
-      print('Connectivity Result: not connected');
-      return false;
+  void checkConnectivity() async {
+    try {
+      var connectivityResult = await (Connectivity().checkConnectivity());
+      if (connectivityResult == ConnectivityResult.mobile) {
+        print('Connectivity Result: $connectivityResult');
+        connectionStatus = true;
+      } else if (connectivityResult == ConnectivityResult.wifi) {
+        print('Connectivity Result: $connectivityResult');
+        connectionStatus = true;
+      } else {
+        print('Connectivity Result: not connected');
+        connectionStatus = false;
+      }
+    } catch (e) {
+      print('Error: $e');
     }
   }
 
-  void readLocal() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    fullName = prefs.getString('nama');
-    userId = prefs.getString('userId');
+  Future handleSignIn() async {
+    GoogleSignInAccount googleAccount = await googleSignIn.signIn();
+    GoogleSignInAuthentication googleAuth = await googleAccount.authentication;
+    final AuthCredential credential = GoogleAuthProvider.getCredential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    prefs = await SharedPreferences.getInstance();
+
+    prefs.setString('userId', googleAccount.id);
+    prefs.setString('nama', googleAccount.displayName);
+    prefs.setString('email', googleAccount.email);
+
+    _auth.signInWithCredential(credential).whenComplete(() {
+      addToDatabase(googleAccount);
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => DashboardScreen()));
+    });
+  }
+
+  Future addToDatabase(GoogleSignInAccount googleAccount) async {
+    print('Adding to database');
+    FirebaseDatabase.instance
+        .reference()
+        .child('users')
+        .child(googleAccount.id)
+        .once()
+        .then((snapshot) {
+      if (snapshot.value == null) {
+        print('Added to database');
+        crud.addUser(googleAccount.id, {
+          'userid': googleAccount.id,
+          'nama': googleAccount.displayName,
+          'email': googleAccount.email
+        });
+      }
+    });
   }
 }

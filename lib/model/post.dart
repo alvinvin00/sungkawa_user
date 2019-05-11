@@ -4,6 +4,7 @@ class Post {
   String _key;
   String _photo;
   String _nama,
+      _agama,
       _userId,
       _tempatMakam,
       _usia,
@@ -21,6 +22,7 @@ class Post {
       this._key,
       this._photo,
       this._nama,
+      this._agama,
       this._userId,
       this._tempatMakam,
       this._usia,
@@ -39,6 +41,8 @@ class Post {
   String get photo => _photo;
 
   String get nama => _nama;
+
+  get agama => _agama;
 
   get userId => _userId;
 
@@ -69,6 +73,7 @@ class Post {
     _userId = snapshot.value['userId'];
     _nama = snapshot.value["nama"];
     _usia = snapshot.value["usia"];
+    _agama = snapshot.value['agama'];
     _photo = snapshot.value['photo'];
     _alamat = snapshot.value['alamat'];
     _tanggalMeninggal = snapshot.value["tanggalMeninggal"];
@@ -86,6 +91,7 @@ class Post {
     _userId = json['userId'];
     _nama = json["nama"];
     _usia = json["usia"];
+    _agama = json['agama'];
     _photo = json['photo'];
     _alamat = json['alamat'];
     _tanggalMeninggal = json["tanggalMeninggal"];
@@ -100,19 +106,20 @@ class Post {
   }
 
   Map<String, dynamic> toJson() => {
-        'userId': _userId,
-        'nama': _nama,
-        'usia': _usia,
-        'photo': _photo,
-        'alamat': _alamat,
-        'tanggalMeninggal': _tanggalMeninggal,
-        'prosesi': _prosesi,
-        'lokasiSemayam': _lokasiSemayam,
-        'lokasiMakam': _lokasiMakam,
-        'tempatMakam': _tempatMakam,
-        'tanggalSemayam': _tanggalSemayam,
-        'waktuSemayam': _waktuSemayam,
-        'keterangan': _keterangan,
-        'timestamp': _timestamp
-      };
+    'userId': _userId,
+    'nama': _nama,
+    'usia': _usia,
+    'agama': _agama,
+    'photo': _photo,
+    'alamat': _alamat,
+    'tanggalMeninggal': _tanggalMeninggal,
+    'prosesi': _prosesi,
+    'lokasiSemayam': _lokasiSemayam,
+    'lokasiMakam': _lokasiMakam,
+    'tempatMakam': _tempatMakam,
+    'tanggalSemayam': _tanggalSemayam,
+    'waktuSemayam': _waktuSemayam,
+    'keterangan': _keterangan,
+    'timestamp': _timestamp
+  };
 }

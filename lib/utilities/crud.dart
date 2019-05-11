@@ -7,11 +7,11 @@ class CRUD {
       FirebaseDatabase.instance.reference().child('posts');
   DatabaseReference commentRef =
       FirebaseDatabase.instance.reference().child('comments');
-  DatabaseReference adminRef =
-      FirebaseDatabase.instance.reference().child('admins');
+  DatabaseReference userRef =
+  FirebaseDatabase.instance.reference().child('users');
 
-  Future<void> addAdmin(String adminId, adminData) async {
-    adminRef.child(adminId).set(adminData);
+  Future<void> addUser(String userId, userData) async {
+    userRef.child(userId).set(userData);
   }
 
   Future<void> addPost(postData) async {
@@ -38,6 +38,12 @@ class CRUD {
       return isEmpty;
     });
   }
+
+  getUserInfo(userId) {
+
+
+  }
+
 
   updatePost(postId, postData) {
     postRef.child(postId).update(postData).catchError((e) {

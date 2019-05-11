@@ -1,19 +1,22 @@
+import 'package:firebase_database/firebase_database.dart';
+
 class User {
-  String uid, email, nama;
+  String _key, _email, _nama, _userName;
 
-  User(this.uid, this.email, this.nama);
+  String get key => _key;
 
-  Map toMap(User user) {
-    var data = Map<String, dynamic>();
-    data['userId'] = user.uid;
-    data['nama'] = user.nama;
-    data['email'] = user.email;
-    return data;
-  }
+  String get email => _email;
 
-  User.fromMap(Map<String, dynamic> mapData) {
-    this.uid = mapData['userId'];
-    this.nama = mapData['nama'];
-    this.email = mapData['email'];
+  String get nama => _nama;
+
+  get userName => _userName;
+
+  User(this._key, this._email, this._nama, this._userName);
+
+  User.fromSnapshot(DataSnapshot snapshot) {
+    _key = snapshot.key;
+    _email = snapshot.value['email'];
+    _nama = snapshot.value['nama'];
+    _userName = snapshot.value['username'];
   }
 }
